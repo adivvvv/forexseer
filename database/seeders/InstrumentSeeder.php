@@ -516,6 +516,46 @@ class InstrumentSeeder extends Seeder
                 'active_from'          => '2006-04-24',
                 'active_to'            => '2011-06-19',
             ],
+            //
+            // ──────── CRYPTO FUTURES ────────
+            //
+            [
+                'cftc_name'           => 'Bitcoin',
+                'cftc_name_scrapping' => 'BITCOIN - CHICAGO MERCANTILE EXCHANGE',
+                'our_symbol'          => 'BTC',
+                'alt_symbol'          => 'BTCUSD',
+                // CME Bitcoin futures launched December 17, 2017
+                'active_from'         => '2017-12-17',
+                'active_to'           => null,
+            ],
+            [
+                'cftc_name'           => 'Micro Bitcoin',
+                'cftc_name_scrapping' => 'MICRO BITCOIN - CHICAGO MERCANTILE EXCHANGE',
+                'our_symbol'          => 'MBT',
+                'alt_symbol'          => 'BTCUSD',
+                // Micro Bitcoin futures launched May 3, 2021
+                'active_from'         => '2021-05-03',
+                'active_to'           => null,
+            ],
+            [
+                'cftc_name'           => 'Ether',
+                'cftc_name_scrapping' => 'ETHER CASH SETTLED - CHICAGO MERCANTILE EXCHANGE',
+                'our_symbol'          => 'ETH',
+                'alt_symbol'          => 'ETHUSD',
+                // CME Ether futures launched February 8, 2021
+                'active_from'         => '2021-02-08',
+                'active_to'           => null,
+            ],
+            [
+                'cftc_name'           => 'Micro Ether',
+                'cftc_name_scrapping' => 'MICRO ETHER - CHICAGO MERCANTILE EXCHANGE',
+                'our_symbol'          => 'MET',
+                'alt_symbol'          => 'ETHUSD',
+                // Micro Ether futures launched August 2, 2021
+                'active_from'         => '2021-08-02',
+                'active_to'           => null,
+            ],
+
         ];
 
         foreach ($list as $item) {

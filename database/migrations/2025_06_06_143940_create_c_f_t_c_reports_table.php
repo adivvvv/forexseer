@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('cftc_reports', function (Blueprint $table) {
+        Schema::create('c_f_t_c_reports', function (Blueprint $table) {
             $table->id();
 
             // Now references instruments.instrument_id
@@ -60,6 +60,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('cftc_reports');
+        Schema::dropIfExists('c_f_t_c_reports');
     }
 };

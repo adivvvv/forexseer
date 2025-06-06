@@ -13,6 +13,7 @@ return new class extends Migration
     {
         
         Schema::create('instruments', function (Blueprint $table) {
+
             // Use instrument_id instead of id()
             $table->id('instrument_id');
 
@@ -46,6 +47,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        
         Schema::dropIfExists('instruments');
     }
 };

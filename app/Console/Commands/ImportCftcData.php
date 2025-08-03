@@ -19,17 +19,30 @@ class ImportCftcData extends Command
         $baseStorage = storage_path('app' . DIRECTORY_SEPARATOR . 'cftc_historical');
         $tempBase    = storage_path('app' . DIRECTORY_SEPARATOR . 'tmp_cftc');
 
-        $zipFiles = glob($baseStorage . DIRECTORY_SEPARATOR . '*.zip');
-        if (empty($zipFiles)) {
+        // 1) Gather all ZIP archives
+        $allZips = glob($baseStorage . DIRECTORY_SEPARATOR . '*.zip');
+        if (empty($allZips)) {
             $this->info("No .zip files found in {$baseStorage}.");
             return 0;
         }
 
+        // 2) Split into Disaggregated vs Financial by filename (including the 2006_2016 fin_fut_txt case)
+        $disaggZips = array_filter($allZips, fn($path) =>
+            str_contains(basename($path), 'disagg')
+        );
+        $finZips = array_filter($allZips, function($path) {
+            $name = basename($path);
+            return str_contains($name, 'fut_fin_txt')
+                || str_contains($name, 'fin_fut_txt');
+        });
+
+        // 3) Ensure tmp folder exists
         if (! file_exists($tempBase)) {
             mkdir($tempBase, 0755, true);
         }
 
-        foreach ($zipFiles as $zipPath) {
+        // 4) Process Disaggregated first, then Financial
+        foreach (array_merge($disaggZips, $finZips) as $zipPath) {
             $zipFilename = basename($zipPath);
             $this->info("Processing archive: {$zipFilename}");
 
@@ -69,6 +82,7 @@ class ImportCftcData extends Command
 
     protected function parseCsvFile(string $filepath): void
     {
+        // Detect delimiter from first non-empty line
         $fp = fopen($filepath, 'r');
         if (! $fp) {
             $this->error("    ✗ Cannot open {$filepath}");
@@ -92,19 +106,19 @@ class ImportCftcData extends Command
             return;
         }
 
+        // Build columns map
         $headerRow = fgetcsv($handle, 0, $delimiter);
         if (! $headerRow) {
             fclose($handle);
             $this->error("    ✗ Empty or unreadable header in {$filepath}");
             return;
         }
-
         $columns = [];
         foreach ($headerRow as $idx => $rawName) {
             $columns[$idx] = trim($rawName, " \t\n\r\0\x0B\"'");
         }
 
-        // Required columns
+        // Required indexes
         $idxMarketName   = $this->findExactColumn($columns, 'Market_and_Exchange_Names');
         $idxOpenInterest = $this->findExactColumn($columns, 'Open_Interest_All')
                          ?? $this->findExactColumn($columns, 'Open Interest');
@@ -113,9 +127,10 @@ class ImportCftcData extends Command
         $idxDateYYMMDD = $this->findExactColumn($columns, 'As_of_Date_In_Form_YYMMDD');
         $idxReportDate = $this->findExactColumn($columns, 'Report_Date_as_YYYY-MM-DD');
 
-        if ($idxMarketName === null || $idxOpenInterest === null ||
-            ($idxDateYYYY === null && $idxDateYYMMDD === null && $idxReportDate === null))
-        {
+        if ($idxMarketName === null
+            || $idxOpenInterest === null
+            || ($idxDateYYYY === null && $idxDateYYMMDD === null && $idxReportDate === null)
+        ) {
             $this->warn("    ! Missing Market, Date or Open Interest in {$filepath}; skipping.");
             fclose($handle);
             return;
@@ -124,7 +139,6 @@ class ImportCftcData extends Command
         // Disaggregated headers mapping
         $idxProducerLong  = $this->findSubstringColumn($columns, ['Prod_Merc','Long']);
         $idxProducerShort = $this->findSubstringColumn($columns, ['Prod_Merc','Short']);
-        // **fixed**: match any 'swap' + 'long' / 'swap' + 'short'
         $idxSwapLong      = $this->findSubstringColumn($columns, ['swap','long']);
         $idxSwapShort     = $this->findSubstringColumn($columns, ['swap','short']);
         $idxManagedLong   = $this->findSubstringColumn($columns, ['M_Money','Long']);
@@ -141,9 +155,10 @@ class ImportCftcData extends Command
         $rowsSkipped  = 0;
 
         while (($data = fgetcsv($handle, 0, $delimiter)) !== false) {
+            // Market name
             $marketNameRaw = trim($data[$idxMarketName], "\"' ");
 
-            // parse date
+            // Parse report_date
             $reportDate = null;
             if ($idxDateYYYY !== null) {
                 try {
@@ -165,20 +180,23 @@ class ImportCftcData extends Command
                 continue;
             }
 
+            // Find instrument
             $instrument = Instrument::where('cftc_name_scrapping', $marketNameRaw)->first();
             if (! $instrument) {
                 $rowsSkipped++;
                 continue;
             }
 
+            // Skip duplicates
             if (CFTCReport::where('instrument_id', $instrument->instrument_id)
                           ->where('report_date', $reportDate)
-                          ->exists())
-            {
+                          ->exists()
+            ) {
                 $rowsSkipped++;
                 continue;
             }
 
+            // Base row
             $row = [
                 'instrument_id'       => $instrument->instrument_id,
                 'report_date'         => $reportDate,
@@ -192,44 +210,50 @@ class ImportCftcData extends Command
                 'otherreport_short'   => null,
                 'nonreportable_long'  => null,
                 'nonreportable_short' => null,
-                'open_interest'       => intval(str_replace(',', '', $data[$idxOpenInterest] ?? 0)),
+                'open_interest'       => intval(str_replace(',', '', $data[$idxOpenInterest] ?? '0')),
             ];
 
+            // Fill Disaggregated
             if ($isDisaggregated) {
-                if ($idxProducerLong  !== null) $row['producer_long']      = intval(str_replace(',', '', $data[$idxProducerLong]  ?? 0));
-                if ($idxProducerShort !== null) $row['producer_short']     = intval(str_replace(',', '', $data[$idxProducerShort] ?? 0));
-                if ($idxSwapLong      !== null) $row['swap_long']          = intval(str_replace(',', '', $data[$idxSwapLong]      ?? 0));
-                if ($idxSwapShort     !== null) $row['swap_short']         = intval(str_replace(',', '', $data[$idxSwapShort]     ?? 0));
-                if ($idxManagedLong   !== null) $row['managed_long']       = intval(str_replace(',', '', $data[$idxManagedLong]   ?? 0));
-                if ($idxManagedShort  !== null) $row['managed_short']      = intval(str_replace(',', '', $data[$idxManagedShort]  ?? 0));
-                if ($idxOtherLong     !== null) $row['otherreport_long']   = intval(str_replace(',', '', $data[$idxOtherLong]     ?? 0));
-                if ($idxOtherShort    !== null) $row['otherreport_short']  = intval(str_replace(',', '', $data[$idxOtherShort]    ?? 0));
-                if ($idxNonrepLong    !== null) $row['nonreportable_long']= intval(str_replace(',', '', $data[$idxNonrepLong]    ?? 0));
-                if ($idxNonrepShort   !== null) $row['nonreportable_short']= intval(str_replace(',', '', $data[$idxNonrepShort]   ?? 0));
+                if ($idxProducerLong  !== null) $row['producer_long']      = intval(str_replace(',', '', $data[$idxProducerLong]  ?? '0'));
+                if ($idxProducerShort !== null) $row['producer_short']     = intval(str_replace(',', '', $data[$idxProducerShort] ?? '0'));
+                if ($idxSwapLong      !== null) $row['swap_long']          = intval(str_replace(',', '', $data[$idxSwapLong]      ?? '0'));
+                if ($idxSwapShort     !== null) $row['swap_short']         = intval(str_replace(',', '', $data[$idxSwapShort]     ?? '0'));
+                if ($idxManagedLong   !== null) $row['managed_long']       = intval(str_replace(',', '', $data[$idxManagedLong]   ?? '0'));
+                if ($idxManagedShort  !== null) $row['managed_short']      = intval(str_replace(',', '', $data[$idxManagedShort]  ?? '0'));
+                if ($idxOtherLong     !== null) $row['otherreport_long']   = intval(str_replace(',', '', $data[$idxOtherLong]     ?? '0'));
+                if ($idxOtherShort    !== null) $row['otherreport_short']  = intval(str_replace(',', '', $data[$idxOtherShort]    ?? '0'));
+                if ($idxNonrepLong    !== null) $row['nonreportable_long'] = intval(str_replace(',', '', $data[$idxNonrepLong]    ?? '0'));
+                if ($idxNonrepShort   !== null) $row['nonreportable_short']= intval(str_replace(',', '', $data[$idxNonrepShort]   ?? '0'));
             }
 
-            if ($isFinancial) {
+            // Fill Financial (if no Disagg)
+            if ($isFinancial && ! $isDisaggregated) {
+                // Dealer → swap
                 $idl = $this->findExactColumn($columns, 'Dealer_Positions_Long_All');
                 $ids = $this->findExactColumn($columns, 'Dealer_Positions_Short_All');
-                if ($idl !== null) $row['swap_long']  = intval(str_replace(',', '', $data[$idl] ?? 0));
-                if ($ids !== null) $row['swap_short'] = intval(str_replace(',', '', $data[$ids] ?? 0));
+                if ($idl !== null) $row['swap_long']  = intval(str_replace(',', '', $data[$idl] ?? '0'));
+                if ($ids !== null) $row['swap_short'] = intval(str_replace(',', '', $data[$ids] ?? '0'));
 
-                $amL = intval(str_replace(',', '', $data[$this->findExactColumn($columns, 'Asset_Mgr_Positions_Long_All')]  ?? 0));
-                $amS = intval(str_replace(',', '', $data[$this->findExactColumn($columns, 'Asset_Mgr_Positions_Short_All')] ?? 0));
-                $lvL = intval(str_replace(',', '', $data[$this->findExactColumn($columns, 'Lev_Money_Positions_Long_All')]   ?? 0));
-                $lvS = intval(str_replace(',', '', $data[$this->findExactColumn($columns, 'Lev_Money_Positions_Short_All')]  ?? 0));
+                // Managed = Asset_Mgr + Lev_Money
+                $amL = intval(str_replace(',', '', $data[$this->findExactColumn($columns, 'Asset_Mgr_Positions_Long_All')]  ?? '0'));
+                $amS = intval(str_replace(',', '', $data[$this->findExactColumn($columns, 'Asset_Mgr_Positions_Short_All')] ?? '0'));
+                $lvL = intval(str_replace(',', '', $data[$this->findExactColumn($columns, 'Lev_Money_Positions_Long_All')]   ?? '0'));
+                $lvS = intval(str_replace(',', '', $data[$this->findExactColumn($columns, 'Lev_Money_Positions_Short_All')]  ?? '0'));
                 $row['managed_long']  = $amL + $lvL;
                 $row['managed_short'] = $amS + $lvS;
 
+                // Other reportables
                 $oL = $this->findExactColumn($columns, 'Other_Rept_Positions_Long_All');
                 $oS = $this->findExactColumn($columns, 'Other_Rept_Positions_Short_All');
-                if ($oL !== null) $row['otherreport_long']  = intval(str_replace(',', '', $data[$oL] ?? 0));
-                if ($oS !== null) $row['otherreport_short'] = intval(str_replace(',', '', $data[$oS] ?? 0));
+                if ($oL !== null) $row['otherreport_long']  = intval(str_replace(',', '', $data[$oL] ?? '0'));
+                if ($oS !== null) $row['otherreport_short'] = intval(str_replace(',', '', $data[$oS] ?? '0'));
 
+                // Nonreportable
                 $nL = $this->findExactColumn($columns, 'NonRept_Positions_Long_All');
                 $nS = $this->findExactColumn($columns, 'NonRept_Positions_Short_All');
-                if ($nL !== null) $row['nonreportable_long']  = intval(str_replace(',', '', $data[$nL] ?? 0));
-                if ($nS !== null) $row['nonreportable_short'] = intval(str_replace(',', '', $data[$nS] ?? 0));
+                if ($nL !== null) $row['nonreportable_long']  = intval(str_replace(',', '', $data[$nL] ?? '0'));
+                if ($nS !== null) $row['nonreportable_short'] = intval(str_replace(',', '', $data[$nS] ?? '0'));
             }
 
             try {
@@ -272,13 +296,20 @@ class ImportCftcData extends Command
         return null;
     }
 
+    /**
+     * Recursively remove a directory and all its contents.
+     *
+     * @param string $dir The directory path to remove.
+     */
     protected function rrmdir(string $dir): void
     {
         if (! is_dir($dir)) {
             return;
         }
         foreach (scandir($dir) as $obj) {
-            if ($obj === '.' || $obj === '..') continue;
+            if ($obj === '.' || $obj === '..') {
+                continue;
+            }
             $path = $dir . DIRECTORY_SEPARATOR . $obj;
             if (is_dir($path)) {
                 $this->rrmdir($path);

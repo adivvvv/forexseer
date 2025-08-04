@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
 
 class DownloadCftcArchives extends Command
 {
@@ -27,15 +27,19 @@ class DownloadCftcArchives extends Command
      */
     public function handle()
     {
-         // Define the folder under storage/app
+        // Define the folder under storage/app
         $relativeFolder = 'cftc_historical';
         $absoluteFolder = storage_path('app' . DIRECTORY_SEPARATOR . $relativeFolder);
 
-        // Make sure the directory exists on disk (not via Storage::)
-        if (! file_exists($absoluteFolder)) {
-            mkdir($absoluteFolder, 0755, true);
+        // Make sure the directory exists on disk
+        if (! File::exists($absoluteFolder)) {
+            File::makeDirectory($absoluteFolder, 0755, true);
             $this->info("Created directory: {$absoluteFolder}");
         }
+
+        // Remove all old archives so fresh copies will always be downloaded
+        File::cleanDirectory($absoluteFolder);
+        $this->info("Removed old archives from: {$absoluteFolder}");
 
         $urls = [
             // ── Disaggregated Futures-Only ──
@@ -71,17 +75,8 @@ class DownloadCftcArchives extends Command
         ];
 
         foreach ($urls as $url) {
-            $filename      = basename($url);
-            $relativePath  = $relativeFolder . DIRECTORY_SEPARATOR . $filename;
-            $absolutePath  = $absoluteFolder . DIRECTORY_SEPARATOR . $filename;
-
-            // Print the absolute path we’re checking
-            $this->info("Checking existence of: {$absolutePath}");
-
-            if (file_exists($absolutePath)) {
-                $this->info("  ⇒ Skipping {$filename} (already exists).");
-                continue;
-            }
+            $filename     = basename($url);
+            $absolutePath = $absoluteFolder . DIRECTORY_SEPARATOR . $filename;
 
             $this->info("  ⇒ Downloading {$filename} …");
 
@@ -89,14 +84,13 @@ class DownloadCftcArchives extends Command
                 $response = Http::timeout(120)->get($url);
 
                 if ($response->ok()) {
-                    // Save raw body to the absolute path
                     file_put_contents($absolutePath, $response->body());
-                    $this->info("Saved {$filename} to: {$absolutePath}");
+                    $this->info("    ✓ Saved {$filename} to: {$absolutePath}");
                 } else {
-                    $this->error("Failed to download {$filename} (HTTP status {$response->status()}).");
+                    $this->error("    ✗ Failed to download {$filename} (HTTP status {$response->status()}).");
                 }
             } catch (\Exception $e) {
-                $this->error("Error fetching {$filename}: {$e->getMessage()}");
+                $this->error("    ✗ Error fetching {$filename}: {$e->getMessage()}");
             }
         }
 

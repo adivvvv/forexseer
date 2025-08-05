@@ -224,3 +224,28 @@
     @apply bg-background text-foreground;
   }
 }
+
+/*–– Global thin purple scrollbars ––*/
+@layer components {
+  /* Firefox: thin + custom thumb */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #7f5af0 transparent;
+  }
+
+  /* WebKit browsers */
+  *::-webkit-scrollbar {
+    width: 2px;
+    height: 2px;    /* for horizontal scrollbars */
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background-color: #7f5af0;
+    border-radius: 9999px;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background-color: #9f7aea;
+  }
+}

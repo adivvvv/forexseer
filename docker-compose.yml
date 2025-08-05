@@ -6,6 +6,8 @@ services:
   redis:
     image: redis:7-alpine
     container_name: redis_local
+    # Auto-restart on daemon start or container crash
+    restart: always       
     # Bind Redis port 6379 on the host to 127.0.0.1 only
     ports:
       - "127.0.0.1:6379:6379"

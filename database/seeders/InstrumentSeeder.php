@@ -18,7 +18,6 @@ class InstrumentSeeder extends Seeder
                 'cftc_name_scrapping'  => 'USD INDEX - ICE FUTURES U.S.',
                 'our_symbol'           => 'DX',
                 'alt_symbol'           => 'DXY',
-                // Disaggregated COT for financial futures began December 4, 2009
                 'active_from'          => '2009-12-04',
                 'active_to'            => null,
             ],
@@ -207,6 +206,25 @@ class InstrumentSeeder extends Seeder
                 'active_from'          => '2010-01-11',
                 'active_to'            => null,
             ],
+            [
+                'cftc_name'            => 'SOFR 3M',
+                'cftc_name_scrapping'  => 'SOFR-3M - CHICAGO MERCANTILE EXCHANGE',
+                'our_symbol'           => 'SR3M',
+                'alt_symbol'           => 'SOFR3M',
+                // Launched January 11, 2010
+                'active_from'          => '2010-01-11',
+                'active_to'            => null,
+            ],
+            [
+                'cftc_name'            => 'SOFR 1M',
+                'cftc_name_scrapping'  => 'SOFR-1M - CHICAGO MERCANTILE EXCHANGE',
+                'our_symbol'           => 'SR1M',
+                'alt_symbol'           => 'SOFR1M',
+                // Launched January 11, 2010
+                'active_from'          => '2010-01-11',
+                'active_to'            => null,
+            ],
+
             //
             // ──────── ENERGY FUTURES ────────
             //
@@ -483,6 +501,17 @@ class InstrumentSeeder extends Seeder
                 'active_from'         => '2021-08-02',
                 'active_to'           => null,
             ],
+            [
+                'cftc_name'           => 'Solana',
+                'cftc_name_scrapping' => 'SOL - CHICAGO MERCANTILE EXCHANGE',
+                'our_symbol'          => 'SOL',
+                'alt_symbol'          => 'SOLUSD',
+                // Micro Ether futures launched August 2, 2021
+                'active_from'         => '2021-08-02',
+                'active_to'           => null,
+            ],
+
+
 
         ];
 

@@ -1,3 +1,4 @@
+<!-- resources/js/components/ui/sidebar/SidebarMenu.vue -->
 <script setup lang="ts">
 import type { HTMLAttributes } from "vue"
 import { cn } from "@/lib/utils"

@@ -1,3 +1,4 @@
+<!-- resources/js/components/ui/sidebar/SidebarMenuButton.vue -->
 <script setup lang="ts">
 import type { Component } from "vue"
 import type { SidebarMenuButtonProps } from "./SidebarMenuButtonChild.vue"

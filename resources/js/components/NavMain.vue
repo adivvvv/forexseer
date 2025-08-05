@@ -47,7 +47,7 @@ function expandIfCollapsed() {
 
 <template>
   <SidebarGroup>
-    <SidebarGroupLabel>Platform</SidebarGroupLabel>
+    <SidebarGroupLabel>Markets</SidebarGroupLabel>
     <SidebarMenu>
       <Collapsible
         v-for="item in items"

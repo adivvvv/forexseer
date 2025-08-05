@@ -1,0 +1,19 @@
+# docker-compose.yml
+# This file defines a Redis service using Docker Compose.
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: redis_local
+    # Bind Redis port 6379 on the host to 127.0.0.1 only
+    ports:
+      - "127.0.0.1:6379:6379"
+    # Keep data between restarts (optional)
+    volumes:
+      - redis-data:/data
+    # No password is set by default, so requirepass stays null
+    command: ["redis-server", "--appendonly", "yes"]
+
+volumes:
+  redis-data:

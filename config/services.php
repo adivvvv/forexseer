@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'eodhd' => [
+        'api_token' => env('EODHD_API_TOKEN'),
+    ],
+
 ];

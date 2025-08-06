@@ -10,6 +10,7 @@
       :initial-last="initialLast"
       :initial-open="initialOpen"
       :decimals="decimals"
+      :show-dollar="showDollar"
     />
 
     <p class="text-gray-500">…your chart and other UI…</p>
@@ -21,16 +22,16 @@ import { usePage } from '@inertiajs/vue3'
 import RealTimePrice from '@/components/Asset/RealTimePrice.vue'
 
 const {
-  props: { name, type, market, symbol, decimals, initialLast, initialOpen }
+  props: { name, market, symbol, decimals, initialLast, initialOpen, showDollar }
 } = usePage<{
   props: {
     name: string
-    type: string
     market: string
     symbol: string
     decimals: number
     initialLast: number|null
     initialOpen: number|null
+    showDollar: boolean
   }
 }>()
 </script>

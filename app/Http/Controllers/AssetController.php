@@ -26,6 +26,10 @@ class AssetController extends Controller
         $name     = $cfg['name'] ?? $symbol;
         $type     = $cfg['type'] ?? 'unknown';
 
+        // Determine to display dollar sign or not
+        $showDollar = in_array($type, ['us', 'crypto']);
+        
+
         // 3) Build safeKey
         $safeKey = str_replace('-', '_', $cfg['data_symbol']);
 
@@ -64,11 +68,11 @@ class AssetController extends Controller
         return Inertia::render('Asset/Show', [
             'market'      => ucfirst($market),
             'name'        => $name,
-            'type'        => $type,
             'symbol'      => $symbol,
             'decimals'    => $decimals,
             'initialLast' => $initialLast,
             'initialOpen' => $initialOpen,
+            'showDollar'  => $showDollar,
             'access'      => $access,
             'user'        => $user
                 ? ['id'=>$user->id, 'name'=>$user->name]

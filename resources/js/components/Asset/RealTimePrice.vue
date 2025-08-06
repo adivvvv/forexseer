@@ -1,6 +1,6 @@
 <!-- resources/js/components/Asset/RealTimePrice.vue -->
 <template>
-  <Card class="w-full md:w-1/3">
+  <Card class="w-full md:w-1/2 lg:w-1/3">
     <CardHeader>
       <CardTitle>Live Price</CardTitle>
       <CardDescription>{{ props.symbol }}</CardDescription>
@@ -8,10 +8,10 @@
     <CardContent class="space-y-2">
       <!-- Current price -->
       <div v-if="price !== null" class="text-4xl font-bold">
-        ${{ price.toFixed(props.decimals) }}
+      <span v-if="props.showDollar">$</span>{{ formattedPrice }}
       </div>
 
-      <!-- % change vs open‐of‐day -->
+      <!-- % change vs open-of-day -->
       <div
         v-if="changePct !== null"
         :class="changePct >= 0 ? 'text-green-500' : 'text-red-500'"
@@ -38,22 +38,32 @@ interface Props {
   initialLast: number | null
   initialOpen: number | null
   decimals: number
+  showDollar: boolean
 }
 const props = defineProps<Props>()
 
 // State
-const price     = ref<number|null>(props.initialLast)
-const openPrice = ref<number|null>(props.initialOpen)
+const price     = ref<number | null>(props.initialLast)
+const openPrice = ref<number | null>(props.initialOpen)
 
-// Computed % change vs open‐of‐day
-const changePct = computed<number|null>(() => {
+// 🎯 Formatted price with thousands separators
+const formattedPrice = computed<string>(() => {
+  if (price.value === null) return ''
+  return price.value.toLocaleString('en-US', {
+    minimumFractionDigits: props.decimals,
+    maximumFractionDigits: props.decimals,
+  })
+})
+
+// Computed % change vs open-of-day
+const changePct = computed<number | null>(() => {
   if (price.value === null || openPrice.value === null) {
     return null
   }
   return ((price.value - openPrice.value) / openPrice.value) * 100
 })
 
-// Real‐time via Echo
+// Real-time via Echo
 let channel: any
 const echo = (window as any).Echo!
 

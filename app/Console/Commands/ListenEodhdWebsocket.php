@@ -1,6 +1,8 @@
 <?php
 // app/Console/Commands/ListenEodhdWebsocket.php
 
+// This class is disabled in favor of the more generic ListenEodhdCrypto command and ListenEodhdForex and ListenEodhdUs subclasses.
+
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;

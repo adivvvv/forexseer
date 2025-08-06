@@ -1,4 +1,5 @@
 <?php
+// app/Console/Commands/ListenEodhdWebsocket.php
 
 namespace App\Console\Commands;
 
@@ -48,7 +49,7 @@ class ListenEodhdWebsocket extends Command
                     }
 
                     // Publish the raw tick to Redis for downstream consumers
-                    Redis::publish('ticks', json_encode($data));
+                    Redis::publish('raw-ticks', json_encode($data));
 
                     // Parse and display a real tick
                     $ts      = (int)($data['t'] / 1000);

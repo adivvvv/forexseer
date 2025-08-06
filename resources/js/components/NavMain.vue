@@ -21,6 +21,8 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar'
 
+import { Link } from '@inertiajs/vue3'
+
 defineProps<{
   items: {
     title: string
@@ -76,9 +78,9 @@ function expandIfCollapsed() {
                 :key="subItem.title"
               >
                 <SidebarMenuSubButton as-child>
-                  <a :href="subItem.url" class="w-full block">
+                  <Link :href="subItem.url" class="w-full block">
                     <span>{{ subItem.title }}</span>
-                  </a>
+                  </Link>
                 </SidebarMenuSubButton>
               </SidebarMenuSubItem>
             </SidebarMenuSub>

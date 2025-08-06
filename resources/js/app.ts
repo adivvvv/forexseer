@@ -1,3 +1,6 @@
+// resources/js/app.ts
+
+import './bootstrap'        // ← load Echo & Pusher before anything else
 import '../css/app.css';
 
 import { createInertiaApp } from '@inertiajs/vue3';
@@ -11,39 +14,44 @@ import AppSidebarLayout from './layouts/app/AppSidebarLayout.vue';
 
 // Extend ImportMeta interface for Vite...
 declare module 'vite/client' {
-    interface ImportMetaEnv {
-        readonly VITE_APP_NAME: string;
-        [key: string]: string | boolean | undefined;
-    }
+  interface ImportMetaEnv {
+    readonly VITE_APP_NAME: string;
+    [key: string]: string | boolean | undefined;
+  }
 
-    interface ImportMeta {
-        readonly env: ImportMetaEnv;
-        readonly glob: <T>(pattern: string) => Record<string, () => Promise<T>>;
-    }
+  interface ImportMeta {
+    readonly env: ImportMetaEnv;
+    readonly glob: <T>(pattern: string) => Record<string, () => Promise<T>>;
+  }
 }
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 
 createInertiaApp({
-    title: (title) => `${title} - ${appName}`,
-    resolve: (name) =>
-      resolvePageComponent(
-        `./pages/${name}.vue`,
-        import.meta.glob<DefineComponent>('./pages/**/*.vue'),
-      ).then((page) => {
-        // If the page itself hasn’t set its own layout, fall back to the sidebar:
-        page.default.layout = page.default.layout || AppSidebarLayout;
-        return page;
-      }),
-    setup({ el, App, props, plugin }) {
-        createApp({ render: () => h(App, props) })
-            .use(plugin)
-            .use(ZiggyVue)
-            .mount(el);
-    },
-    progress: {
-        color: '#4B5563',
-    },
+  title: (title) => `${title} - ${appName}`,
+  resolve: (name) =>
+    resolvePageComponent(
+      `./pages/${name}.vue`,
+      import.meta.glob<DefineComponent>('./pages/**/*.vue')
+    ).then((module) => {
+      // grab the component itself (not the module)
+      const page = module.default;
+
+      // if the page hasn’t set its own layout, fall back to the sidebar
+      page.layout = page.layout || AppSidebarLayout;
+
+      // return the component, not the module object
+      return page;
+    }),
+  setup({ el, App, props, plugin }) {
+    createApp({ render: () => h(App, props) })
+      .use(plugin)
+      .use(ZiggyVue)
+      .mount(el);
+  },
+  progress: {
+    color: '#4B5563',
+  },
 });
 
 // This will set light / dark mode on page load...

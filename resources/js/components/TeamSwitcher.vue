@@ -1,6 +1,16 @@
 <!-- resources/js/components/TeamSwitcher.vue -->
 <script setup lang="ts">
 import Logo from '@/components/Logo.vue'
+
+// Declare that we accept a `teams` array
+ interface Team {
+   name: string
+   logo: any    // LucideIcon
+   plan: string
+ }
+ const props = defineProps<{
+   teams: Team[]
+}>()
 </script>
 
 <template>

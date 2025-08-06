@@ -1,10 +1,12 @@
 <?php
+// app/Console/Commands/SubscribeRedisTicks.php
 
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Log;
 use App\Events\RealTimeTickReceived;
+use Illuminate\Support\Facades\Redis;
 
 class SubscribeRedisTicks extends Command
 {
@@ -12,17 +14,15 @@ class SubscribeRedisTicks extends Command
     protected $description = 'Subscribe to Redis “ticks” channel and re-broadcast into Laravel.';
 
     public function handle()
-    {
-        $this->info('Subscribing to Redis channel: ticks');
+{
+    $this->info('Subscribing to Redis channel: raw-ticks');
 
-        // use the dedicated subscriber connection
-        Redis::connection('subscriber')
-            ->subscribe(['ticks'], function ($message) {
-                $data = json_decode($message, true);
-                if (! is_array($data)) {
-                    return;
-                }
-                event(new RealTimeTickReceived($data));
-            });
-    }
+    Redis::connection('subscriber')->subscribe(['raw-ticks'], function ($msg) {
+        $tick = json_decode($msg, true);
+        $this->info("⚡️ Raw tick in: {$msg}");
+
+        // Broadcast cleanly on public "ticks" channel
+        event(new RealTimeTickReceived($tick));
+    });
+}
 }

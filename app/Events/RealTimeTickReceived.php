@@ -42,13 +42,23 @@ class RealTimeTickReceived implements ShouldBroadcastNow
     }
 
     /**
-     * The data to broadcast to the client.
+     * Broadcast the raw tick payload as the event data.
      *
      * @return array
      */
     public function broadcastWith()
     {
-        // Broadcast the raw tick payload as the event data
         return $this->tick;
+    }
+
+    /**
+     * Override the event name so the client sees "RealTimeTickReceived"
+     * instead of the full class name.
+     *
+     * @return string
+     */
+    public function broadcastAs(): string
+    {
+        return 'RealTimeTickReceived';
     }
 }

@@ -6,6 +6,12 @@ This document describes the end-to-end real-time pipeline we’ve built for Fore
 
 ## 🚀 1. End-to-end Real-Time Pipeline
 
+**Install Prereqisities:** 
+```bash
+npm install --g laravel-echo-server laravel-echo pusher-js socket.io-client@2
+```
+
+
 ### 1.1. Data Ingestion (Laravel CLI)
 
 **Command:**  

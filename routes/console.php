@@ -13,4 +13,12 @@ Schedule::command('cftc:import-live')
     ->withoutOverlapping()
     ->runInBackground();
 
+
+Schedule::command('candles:prune')
+    ->dailyAt('02:00')         // pick your time
+    ->timezone('UTC')          // or 'Europe/Warsaw'
+    ->withoutOverlapping()
+    ->onOneServer()
+    ->runInBackground()
+    ->description('Delete candles older than 30 days');
     

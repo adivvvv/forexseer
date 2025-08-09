@@ -149,6 +149,7 @@ return [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
             'prefix' => env('REDIS_PREFIX', ''),
             'persistent' => env('REDIS_PERSISTENT', false),
+            'read_write_timeout' => 0, // disable read timeout for pub/sub
         ],
 
         'default' => [
@@ -169,7 +170,7 @@ return [
             'database' => env('REDIS_CACHE_DB', '1'),
         ],
 
-        // new subscriber connection
+        // subscriber connection (idle-proof)
         'subscriber' => [
             'url'      => env('REDIS_URL'),
             'host'     => env('REDIS_HOST', '127.0.0.1'),
@@ -177,6 +178,7 @@ return [
             'password' => env('REDIS_PASSWORD', null),
             'port'     => env('REDIS_PORT', '6379'),
             'database' => env('REDIS_SUBSCRIBER_DB', '2'),
+            'read_write_timeout' => 0, // ensure no idle disconnects
         ],
 
     ],
